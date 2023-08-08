@@ -24,9 +24,9 @@ public class Main {
 
              System.out.println("ID, Username, First, Last");
 
-            while(rs.next())
+            while(rs.next())//returns true if there is a remaining subsequent row in the table, moves pointer to subsequent row
               {
-                //returns true if not the last row in the table, moves pointer to subsequent row
+      
                 int id = rs.getInt("holder_id");
                 String username = rs.getString("username");
                 String fn = rs.getString("first_name");
@@ -42,7 +42,7 @@ public class Main {
     while(answer!=0)
     {
 
-            System.out.println("\nWelcome to the bank!\nPlease enter the number that corresponds to your request: \n\n 0: Exit\n 1: Create a holder profile \n 2: Create a savings account");
+            System.out.println("\nWelcome to the bank!\nPlease enter the number that corresponds to your request: \n\n 0: Exit\n 1: Create a holder profile \n 2: Create a savings account \n 3: Withdraw money \n 4: Deposit money");
             answer = scan.nextInt();
               if(answer==0)
               {
@@ -137,10 +137,11 @@ public class Main {
                         String password2 = scan.next();
                         PreparedStatement pstmt2 = connection.prepareStatement("SELECT username, first_name, last_name, password FROM bankAccountHolders WHERE username = ?");//this selects the rows that ONLY contain usernames that match the one entered by the user
                         pstmt2.setString(1, username2);
-                        ResultSet rs3 = pstmt2.executeQuery();//creates a result set of only rows with the user-specified username.
-                        rs3.next();//this moves the pointer to the first row of the result set
+                        ResultSet rsInfo = pstmt2.executeQuery();//creates a result set of only rows with the user-specified username.
                         
-                          while((rs3.getString("password").equals(password2))==false)//will loop through until entered password matches the password in database
+                        rsInfo.next();//this moves the pointer to the first row of the result set
+                        
+                          while((rsInfo.getString("password").equals(password2))==false)//will loop through until entered password matches the password in database
                           {
                             System.out.println("Incorrect password. Please re-enter the correct password: ");
                             password2 = scan.next();
@@ -150,8 +151,8 @@ public class Main {
 
                           PreparedStatement pstmt3 = connection.prepareStatement("INSERT INTO bankAccounts(username, firstName, lastName, balance, lastTransaction) VALUES (?, ?, ?, ?, ?)");
                           pstmt3.setString(1, username2);
-                          pstmt3.setString(2, rs3.getString("first_name"));
-                          pstmt3.setString(3, rs3.getString("last_name"));
+                          pstmt3.setString(2, rsInfo.getString("first_name"));
+                          pstmt3.setString(3, rsInfo.getString("last_name"));
                           pstmt3.setFloat(4, balance);
                           pstmt3.setString(5, Float.toString(balance));//turns the entered balance into a string, which is then entered into the database as the last transaction of the account.
                           pstmt3.executeUpdate();
@@ -171,17 +172,138 @@ public class Main {
                  
            
                  }
+
+                 if(answer == 3)
+                 {
+                  System.out.println("You want to withdraw money! ");
+                  String username3 = "";
+
+                     String query3 = "select username from bankAccountHolders";// Retrieving the usernames from the bankAccounts table
+                     ResultSet rs3 = st.executeQuery(query3);
+                     int count3 = 0;
+                     while(count3 == 0)
+                      {
+                      System.out.println("Please enter a valid username: ");
+                      rs3.beforeFirst();
+                      username3 = scan.next();
+                       while(rs3.next())//loops through rowns of bankAccountHolders, will increase the variable count3 if the entered username is found in the database.
+                        {
+                         if(rs3.getString("username").equals(username3))
+                          {
+                          count3++;
+                          }
+                        }
+                        }
+
+                        System.out.println("Please enter the password for the username " + username3 + ":");
+                        String password3 = scan.next();
+                        PreparedStatement pstmt3 = connection.prepareStatement("SELECT username, password FROM bankAccountHolders WHERE username = ?");//this selects the rows that ONLY contain usernames that match the one entered by the user
+                        pstmt3.setString(1, username3);
+                        ResultSet rsInfo2 = pstmt3.executeQuery();//creates a result set of only rows with the user-specified username.
+                        
+                        rsInfo2.next();//this moves the pointer to the first row of the result set
+                        
+                          while((rsInfo2.getString("password").equals(password3)) == false)//will loop through until entered password matches the password in database
+                          {
+                            System.out.println("Incorrect password. Please re-enter the correct password: ");
+                            password3 = scan.next();
+                          }
+                       
+                      
+                       System.out.println("Please enter an amount to withdraw: ");
+                       float withdrawAmnt = scan.nextFloat();
+                       PreparedStatement pstmtBalance = connection.prepareStatement("SELECT balance FROM bankAccounts WHERE username = ?");
+                       pstmtBalance.setString(1, username3);
+                       ResultSet rsBalance = pstmtBalance.executeQuery();//creates a result set of 1 row, 1 column containing the balance of the savings account
+                       rsBalance.next();
+                       float currentBalance = rsBalance.getFloat("balance");//sets this variable to the current balnce of the savings account
+
+                        while(withdrawAmnt > currentBalance)//will not let user enter a value greater than their current balance
+                        {
+                          System.out.println("You do not have enough funds. Please enter a new amount to withdraw: ");
+                          withdrawAmnt = scan.nextFloat();
+                        }
+                        PreparedStatement pstmnt4 = connection.prepareStatement("UPDATE bankAccounts set balance = ? WHERE username =?");
+                        pstmnt4.setFloat(1, (currentBalance - withdrawAmnt));
+                        pstmnt4.setString(2, username3);
+                        pstmnt4.executeQuery();
+                        System.out.println("Your new account balance is " + (currentBalance-withdrawAmnt));
+
                  
-         }
+                   }
+
+                   if(answer ==4)
+                   {
+                    
+                  System.out.println("You want to deposit money! ");
+                  String username4 = "";
+
+                     String query4 = "select username from bankAccountHolders";// Retrieving the usernames from the bankAccounts table
+                     ResultSet rs4 = st.executeQuery(query4);
+                     int count4 = 0;
+
+                     while(count4 == 0)//will loop through until a valid username is entered
+                       {
+                      rs4.beforeFirst();//places pointer right before first row of result set, this needs to happen every time this loop checks a new username
+                      System.out.println("Please enter a valid username: ");
+                      username4 = scan.next();
+                       while(rs4.next())//loops through rowns of bankAccountHolders, will increase the variable count3 if the entered username is found in the database.
+                        {
+                         if(rs4.getString("username").equals(username4))
+                          {
+                          count4++;
+                          }
+                        }
+                        }
+
+                        System.out.println("Please enter the password for the username " + username4 + ":");
+                        String password4 = scan.next();
+                        PreparedStatement pstmt4 = connection.prepareStatement("SELECT password FROM bankAccountHolders WHERE username = ?");//this selects the rows that ONLY contain usernames that match the one entered by the user
+                        pstmt4.setString(1, username4);
+                        ResultSet rsInfo2 = pstmt4.executeQuery();//creates a result set of 1 row, 1 column containing the password connected to the user-specified username.
+                        
+                        rsInfo2.next();//this moves the pointer to the first row of the result set
+                        
+                          while((rsInfo2.getString("password").equals(password4)) == false)//will loop through until entered password matches the password in database
+                          {
+                            System.out.println("Incorrect password. Please re-enter the correct password: ");
+                            password4 = scan.next();
+                          }
+                       
+                      
+                       System.out.println("Please enter an amount to deposit: ");
+                       float withdrawAmnt = scan.nextFloat();
+                       PreparedStatement pstmtBalance = connection.prepareStatement("SELECT balance FROM bankAccounts WHERE username = ?");
+                       pstmtBalance.setString(1, username4);
+                       ResultSet rsBalance = pstmt4.executeQuery();//creates a result set of 1 row, 1 column containing the balance of the savings account
+
+                       float currentBalance = rsBalance.getFloat("balance");//sets this variable to the current balnce of the savings account
+
+                      
+                        PreparedStatement pstmnt4 = connection.prepareStatement("UPDATE bankAccounts set balance = ? WHERE username =?");//A query that will update the new balance of the account
+                        pstmnt4.setFloat(1, (currentBalance + withdrawAmnt));
+                        pstmnt4.setString(2, username4);
+                        pstmnt4.executeQuery();
+
+                        System.out.println("Your new account balance is " + (currentBalance + withdrawAmnt));
+
+                   }
             st.close();
       
         }
+      
+    }
 
             
          catch (SQLException e) {
             e.printStackTrace();
         }
      }
+        
+}
+    
+
+
         
 }
     
