@@ -1,2 +1,2 @@
 # Banking-System1
-Utilizes MariaDB/SQL to create, manage, and track fictional bank accounts and account holder information.
+Utilizes SQL and MariaDB to create, manage, and track fictional bank accounts and account holder information.
